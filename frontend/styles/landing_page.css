@@ -1,0 +1,258 @@
+/* ═══════════════════════════════════════════════════════════════
+   MagnetAI — styles/landing_page.css
+   Section 05 — AI Landing Page Generator
+   Mirrors the pattern of .campaign-section / .poster-section.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Section wrapper — same width as campaign (1160px) ──── */
+.landing-page-section {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 0 32px 140px;
+}
+
+/* ── Controls footer — hint left, button right ──────────── */
+.lp-controls-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding-top: 32px;
+  border-top: 1px solid var(--glass-border);
+}
+
+/* ── Preview wrapper — fade-up reveal ───────────────────── */
+.lp-preview-wrap {
+  margin-top: 56px;
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity   0.6s var(--ease-out),
+    transform 0.6s var(--ease-out);
+}
+
+.lp-preview-wrap.lp-preview-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── Preview header ─────────────────────────────────────── */
+.lp-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  gap: 16px;
+}
+
+.lp-preview-label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Preview card ───────────────────────────────────────── */
+.lp-preview-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-xl);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  padding: 48px 52px;
+  position: relative;
+  overflow: hidden;
+}
+
+.lp-preview-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--glass-shine) 0%, transparent 55%);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.lp-preview-card::after {
+  content: '';
+  position: absolute;
+  top: -1px; left: 18%; right: 18%;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--cyan), var(--violet), var(--cyan), transparent);
+  opacity: 0.55;
+}
+
+/* ── Hero section ───────────────────────────────────────── */
+.lp-hero {
+  text-align: center;
+  padding-bottom: 48px;
+  border-bottom: 1px solid var(--glass-border);
+  margin-bottom: 48px;
+}
+
+.lp-hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--cyan);
+  text-shadow: 0 0 28px var(--cyan-glow);
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+
+.lp-hero-subtitle {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  max-width: 580px;
+  margin: 0 auto 28px;
+  line-height: 1.7;
+}
+
+.lp-cta-btn-preview {
+  display: inline-block;
+  padding: 14px 36px;
+  background: linear-gradient(135deg, var(--cyan), var(--violet));
+  color: #03030a;
+  border-radius: var(--r-md);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.04em;
+}
+
+/* ── Content grid — 2 cols on desktop ───────────────────── */
+.lp-content-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px 52px;
+  margin-bottom: 40px;
+}
+
+/* ── Section heading inside preview ────────────────────── */
+.lp-section-title {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--violet);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lp-section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, var(--glass-border), transparent);
+}
+
+/* ── Benefits list ──────────────────────────────────────── */
+.lp-benefits-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lp-benefit-item {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  padding-left: 18px;
+  position: relative;
+}
+
+.lp-benefit-item::before {
+  content: '✦';
+  position: absolute;
+  left: 0;
+  color: var(--cyan);
+  font-size: 0.7rem;
+  top: 2px;
+}
+
+/* ── Testimonials ───────────────────────────────────────── */
+.lp-testimonials-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.lp-testimonial-item {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-style: italic;
+  line-height: 1.65;
+  padding: 14px 18px;
+  background: rgba(155, 109, 255, 0.05);
+  border-left: 2px solid var(--violet);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+}
+
+/* ── FAQ ────────────────────────────────────────────────── */
+.lp-faq-wrap {
+  grid-column: 1 / -1;
+}
+
+.lp-faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.lp-faq-item {
+  padding: 20px 24px;
+  background: rgba(0, 240, 255, 0.03);
+  border: 1px solid rgba(0, 240, 255, 0.10);
+  border-radius: var(--r-md);
+}
+
+.lp-faq-q {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.lp-faq-a {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.65;
+}
+
+/* ── Footer text ────────────────────────────────────────── */
+.lp-footer-preview {
+  text-align: center;
+  padding-top: 32px;
+  border-top: 1px solid var(--glass-border);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+
+/* ── Theme accent overrides ─────────────────────────────── */
+.lp-preview-wrap.lp-theme-startup_neon    .lp-hero-title { color: var(--cyan);   text-shadow: 0 0 28px var(--cyan-glow); }
+.lp-preview-wrap.lp-theme-minimal_white   .lp-hero-title { color: var(--violet); text-shadow: none; }
+.lp-preview-wrap.lp-theme-corporate_clean .lp-hero-title { color: #0056b3;       text-shadow: none; }
+.lp-preview-wrap.lp-theme-gradient_dark   .lp-hero-title { color: #c8a84b;       text-shadow: 0 0 20px rgba(200,168,75,0.4); }
+.lp-preview-wrap.lp-theme-bold_startup    .lp-hero-title { color: var(--pink);   text-shadow: 0 0 20px var(--pink-glow); }
+
+/* ── Responsive ─────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .landing-page-section      { padding-left: 20px; padding-right: 20px; }
+  .lp-controls-footer        { flex-direction: column; align-items: stretch; }
+  .lp-content-grid           { grid-template-columns: 1fr; gap: 32px; }
+  .lp-preview-card           { padding: 28px 22px; }
+  .lp-preview-header         { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .lp-faq-wrap               { grid-column: 1; }
+}

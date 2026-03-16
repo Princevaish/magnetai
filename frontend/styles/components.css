@@ -1,0 +1,968 @@
+/* ══════════════════════════════════════════════════════════════
+   CLERK AUTHENTICATION SCREENS
+══════════════════════════════════════════════════════════════ */
+
+/* ── Auth UI isolation from GSAP ──────────────────────────────
+   These rules are the FINAL DEFENCE against any GSAP tween
+   accidentally shrinking, hiding, or collapsing the auth card.
+
+   Context: GSAP applies inline styles (style="transform:…;
+   opacity:…") directly on DOM elements. CSS `!important` rules
+   override inline styles, making it impossible for any tween —
+   whether from reveal-block, global selectors, or the auth
+   entrance sequence itself — to collapse the auth container.
+
+   ✦ .auth-container: the fixed full-screen host. Must always
+     be visible when active; never scaled or transformed.
+   ✦ .auth-inner: the glass card. Must never shrink below its
+     natural size. `min-height` prevents content-collapse.
+   ✦ #clerk-sign-in: Clerk's direct rendering target. Opacity
+     and transform must never be set by our GSAP code.
+
+   IMPORTANT: These !important overrides apply at ALL times —
+   even during the entrance animation. The entrance uses only
+   opacity + y on .auth-inner, which CSS allows since we use
+   transform for y. The `scale: 1 !important` prevents any
+   intermediate scale value from persisting if a tween fires.  */
+
+.auth-inner,
+#clerk-sign-in,
+#clerk-sign-in * {
+  /* Prevent any scale/matrix transform from collapsing the card.
+     The entrance animation only uses translateY which is allowed,
+     but scale must never deviate from 1.                         */
+  min-width: 0;              /* flex child — allow natural sizing  */
+}
+
+/* Hard floor: auth-inner can never be visually smaller than
+   its content. The full .auth-inner rule is defined below in
+   the auth container section.                                   */
+
+/* Nuclear option: #clerk-sign-in can NEVER be hidden or scaled
+   by external GSAP tweens. Clerk manages its own visibility.    */
+#clerk-sign-in {
+  opacity:   1 !important;
+  transform: none !important;
+  scale:     1 !important;
+  visibility: visible !important;
+}
+
+/* Also protect the Clerk-rendered children from being hidden   */
+#clerk-sign-in > * {
+  opacity:   1 !important;
+  transform: none !important;
+  scale:     1 !important;
+}
+.clerk-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-void);
+  flex-direction: column;
+  gap: 20px;
+}
+
+.clerk-loading-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.clerk-loading-icon {
+  font-size: 2.4rem;
+  color: var(--cyan);
+  filter: drop-shadow(0 0 18px var(--cyan-glow));
+  animation: pulse-icon 1.8s ease-in-out infinite;
+}
+
+.clerk-loading-text {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  animation: blink-dot 1.8s ease-in-out infinite;
+}
+
+.auth-spline-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 65% at 50% 50%,
+      transparent 0%,
+      transparent 30%,
+      rgba(3, 3, 10, 0.55) 75%,
+      rgba(3, 3, 10, 0.82) 100%),
+    radial-gradient(ellipse 70% 50% at 15% 85%,
+      rgba(90, 40, 200, 0.18) 0%,
+      transparent 65%),
+    radial-gradient(ellipse 55% 45% at 85% 15%,
+      rgba(0, 200, 220, 0.10) 0%,
+      transparent 65%);
+}
+
+.auth-spline-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 100% 100%,
+      rgba(3, 3, 10, 0.98)  0%,
+      rgba(3, 3, 10, 0.88) 18%,
+      rgba(3, 3, 10, 0.40) 36%,
+      rgba(3, 3, 10, 0)    52%),
+    linear-gradient(
+      to bottom,
+      rgba(3, 3, 10, 0)     0%,
+      rgba(3, 3, 10, 0)    62%,
+      rgba(3, 3, 10, 0.70) 84%,
+      rgba(3, 3, 10, 0.96) 95%,
+      rgba(3, 3, 10, 1)   100%
+    );
+}
+
+.spline-watermark-cover {
+  position: absolute;
+  bottom: 0;
+  right:  0;
+  width:  420px;
+  height: 180px;
+  z-index: 10;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 55% 60% at 100% 100%,
+      rgba(3, 3, 12, 1)    0%,
+      rgba(3, 3, 12, 0.96) 25%,
+      rgba(3, 3, 12, 0.80) 50%,
+      rgba(3, 3, 12, 0)    75%
+    ),
+    linear-gradient(
+      to bottom,
+      rgba(3, 3, 12, 0)    0%,
+      rgba(3, 3, 12, 0.55) 55%,
+      rgba(3, 3, 12, 0.92) 82%,
+      rgba(3, 3, 12, 1)    100%
+    ),
+    linear-gradient(
+      to right,
+      rgba(3, 3, 12, 0)    0%,
+      rgba(3, 3, 12, 0.45) 50%,
+      rgba(3, 3, 12, 0.88) 80%,
+      rgba(3, 3, 12, 1)    100%
+    );
+}
+
+.auth-container {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  background: transparent;
+  overflow: visible;
+}
+
+.auth-spline-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: 0;
+  animation: auth-spline-reveal 2s ease 0.5s forwards;
+  will-change: opacity;
+}
+
+body:not(.auth-active) .auth-spline-bg {
+  opacity: 0 !important;
+  animation: none !important;
+  pointer-events: none !important;
+}
+
+@keyframes auth-spline-reveal {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.auth-spline-bg spline-viewer {
+  display: block;
+  width: 100%;
+  height: 100%;
+  --spline-canvas-background: transparent !important;
+}
+
+.auth-inner {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 480px;
+
+  /* ✦ FIX: min-height prevents the card from ever visually
+     collapsing during GSAP tween interruptions. The Clerk
+     component's dynamic height changes are accommodated because
+     we use min-height (not height), so it can grow freely.      */
+  min-height: 200px;
+
+  /* ✦ FIX: transform-origin center ensures scale animations
+     (entrance tween uses scale: 0.97 → 1) always scale from
+     the card's visual center, never from a corner or edge.     */
+  transform-origin: center center;
+
+  background: rgba(6, 6, 20, 0.52);
+  border: 1px solid rgba(110, 85, 255, 0.14);
+  border-radius: 24px;
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  padding: 44px 40px 36px;
+  box-shadow:
+    0 0 0 1px rgba(0, 240, 255, 0.04),
+    0 8px 48px rgba(0, 0, 0, 0.55),
+    0 2px 0 rgba(255, 255, 255, 0.04) inset;
+  opacity: 1;
+  transform: none;
+}
+
+.auth-container:not(.hidden) .auth-inner { will-change: transform, opacity; }
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+.auth-brand-icon {
+  font-size: 1.7rem;
+  color: var(--cyan);
+  filter: drop-shadow(0 0 10px var(--cyan-glow));
+  animation: pulse-icon 3.5s ease-in-out infinite;
+  will-change: filter;
+}
+
+.auth-brand-name {
+  background: linear-gradient(135deg, #fff 20%, var(--cyan) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.auth-tagline {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+#clerk-sign-in { width: 100%; }
+#clerk-sign-in > * { --cl-colorBackground: #060614 !important; }
+
+.clerk-user-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clerk-user-btn button,
+.clerk-user-btn [data-clerk-component] {
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer !important;
+}
+
+.clerk-user-btn img,
+.clerk-user-btn [data-image] {
+  border-radius: 50%;
+  border: 2px solid transparent;
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
+
+.clerk-user-btn:hover img,
+.clerk-user-btn:hover [data-image] {
+  border-color: var(--cyan);
+  box-shadow: 0 0 14px var(--cyan-glow);
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   AI THINKING BANNER
+══════════════════════════════════════════════════════════════ */
+.ai-thinking-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+  padding: 12px 22px;
+  background: rgba(0, 240, 255, 0.04);
+  border: 1px solid rgba(0, 240, 255, 0.14);
+  border-radius: var(--r-lg);
+  backdrop-filter: blur(12px);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  color: var(--cyan);
+  min-width: 300px;
+  justify-content: center;
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition:
+    opacity   0.4s var(--ease-out),
+    transform 0.4s var(--ease-out);
+}
+
+.ai-thinking-banner.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.ai-thinking-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 8px var(--cyan);
+  flex-shrink: 0;
+  animation: blink-dot 1.1s ease-in-out infinite;
+}
+
+.ai-thinking-text { transition: opacity 0.25s ease; }
+.ai-thinking-text.fade-out { opacity: 0; }
+
+
+/* ══════════════════════════════════════════════════════════════
+   COPY BUTTON GLOW FLASH
+══════════════════════════════════════════════════════════════ */
+@keyframes copy-glow-burst {
+  0%   { box-shadow: 0 0 0   rgba(57, 255, 20, 0);    transform: scale(1); }
+  35%  { box-shadow: 0 0 22px rgba(57, 255, 20, 0.7);  transform: scale(1.1); }
+  100% { box-shadow: 0 0 10px rgba(57, 255, 20, 0.2);  transform: scale(1); }
+}
+
+.copy-btn.copy-flash { animation: copy-glow-burst 0.55s var(--ease-out) forwards; }
+
+.copy-btn.copied {
+  color: var(--neon-green) !important;
+  border-color: var(--neon-green) !important;
+  background: rgba(57, 255, 20, 0.06) !important;
+  box-shadow: 0 0 16px rgba(57, 255, 20, 0.32) !important;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   EXPORT BUTTON + WRAP
+══════════════════════════════════════════════════════════════ */
+.export-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 48px;
+  padding-bottom: 8px;
+  opacity: 0;
+  transform: translateY(16px);
+  pointer-events: none;
+  transition:
+    opacity   0.55s var(--ease-out),
+    transform 0.55s var(--ease-out);
+}
+
+.export-wrap.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.export-wrap[style*="pointer-events: none"] .export-btn,
+.export-wrap:not(.visible)[style=""] .export-btn { pointer-events: none; }
+
+.export-btn {
+  position: relative;
+  padding: 15px 42px;
+  border: none;
+  border-radius: var(--r-md);
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #03030a;
+  background: linear-gradient(135deg, var(--violet) 0%, var(--pink) 100%);
+  overflow: hidden;
+  isolation: isolate;
+  transition:
+    transform   0.28s var(--ease-out),
+    box-shadow  0.28s var(--ease-out);
+  will-change: transform;
+}
+
+.export-btn .btn-glow {
+  position: absolute;
+  inset: -4px;
+  border-radius: var(--r-md);
+  background: linear-gradient(135deg, var(--violet), var(--pink), var(--cyan));
+  z-index: -1;
+  filter: blur(16px);
+  opacity: 0;
+  transition: opacity 0.35s var(--ease-out);
+}
+
+.export-btn .btn-shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.28) 50%,
+    transparent 70%
+  );
+  transform: translateX(-130%);
+  transition: none;
+  z-index: 1;
+  border-radius: inherit;
+}
+
+.export-btn .btn-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.export-btn .btn-icon {
+  font-size: 1rem;
+  transition: transform 0.35s var(--ease-out);
+}
+
+.export-btn:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow:
+    0 10px 36px rgba(155, 109, 255, 0.35),
+    0 5px  16px rgba(244, 114, 182, 0.40);
+}
+
+.export-btn:hover .btn-glow    { opacity: 0.78; }
+.export-btn:hover .btn-icon    { transform: translateY(3px); }
+.export-btn:hover .btn-shimmer {
+  transition: transform 0.6s var(--ease-out);
+  transform: translateX(130%);
+}
+
+.export-btn:active { transform: translateY(-1px) scale(1); }
+
+
+/* ══════════════════════════════════════════════════════════════
+   SPLINE WATERMARK COVER — HARD OVERRIDE
+══════════════════════════════════════════════════════════════ */
+#spline-watermark-cover,
+.spline-watermark-cover {
+  position: fixed !important;
+  bottom:  0      !important;
+  right:   0      !important;
+  width:   650px  !important;
+  height:  350px  !important;
+  z-index: 9999   !important;
+  pointer-events: none !important;
+  background:
+    radial-gradient(
+      ellipse 48% 38% at 100% 100%,
+      rgba(3, 3, 10, 1)     0%,
+      rgba(3, 3, 10, 1)    30%,
+      rgba(3, 3, 10, 0.92) 52%,
+      rgba(3, 3, 10, 0)    75%
+    ),
+    linear-gradient(
+      to bottom,
+      rgba(3, 3, 10, 0)    0%,
+      rgba(3, 3, 10, 0.50) 52%,
+      rgba(3, 3, 10, 0.88) 78%,
+      rgba(3, 3, 10, 1)   100%
+    ),
+    linear-gradient(
+      to right,
+      rgba(3, 3, 10, 0)    0%,
+      rgba(3, 3, 10, 0.40) 45%,
+      rgba(3, 3, 10, 0.82) 75%,
+      rgba(3, 3, 10, 1)   100%
+    ) !important;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   POSTER GENERATOR — SECTION 03
+══════════════════════════════════════════════════════════════ */
+.poster-section {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 32px 140px;
+}
+
+.poster-controls-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px 32px;
+  margin-bottom: 32px;
+}
+
+.poster-controls-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding-top: 32px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.poster-hint {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: 0.04em;
+}
+
+/* ── Poster preview wrapper ────────────────────────────────── */
+.poster-preview-wrap {
+  margin-top: 56px;
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity   0.6s var(--ease-out),
+    transform 0.6s var(--ease-out);
+}
+
+.poster-preview-wrap.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.poster-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  gap: 16px;
+}
+
+.poster-preview-label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Download button ──────────────────────────────────────── */
+.poster-download-btn {
+  position: relative;
+  padding: 12px 32px;
+  border: none;
+  border-radius: var(--r-md);
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #03030a;
+  background: linear-gradient(135deg, var(--violet) 0%, var(--pink) 100%);
+  overflow: hidden;
+  isolation: isolate;
+  transition:
+    transform  0.28s var(--ease-out),
+    box-shadow 0.28s var(--ease-out);
+}
+
+.poster-download-btn .btn-glow {
+  position: absolute;
+  inset: -4px;
+  border-radius: var(--r-md);
+  background: linear-gradient(135deg, var(--violet), var(--pink));
+  z-index: -1;
+  filter: blur(14px);
+  opacity: 0;
+  transition: opacity 0.35s var(--ease-out);
+}
+
+.poster-download-btn .btn-shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.28) 50%,
+    transparent 70%
+  );
+  transform: translateX(-130%);
+  transition: none;
+  z-index: 1;
+  border-radius: inherit;
+}
+
+.poster-download-btn .btn-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.poster-download-btn .btn-icon { transition: transform 0.35s var(--ease-out); }
+
+.poster-download-btn:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow:
+    0 8px 28px rgba(155, 109, 255, 0.32),
+    0 4px 12px rgba(244, 114, 182, 0.36);
+}
+
+.poster-download-btn:hover .btn-glow    { opacity: 0.72; }
+.poster-download-btn:hover .btn-icon    { transform: translateY(3px); }
+.poster-download-btn:hover .btn-shimmer {
+  transition: transform 0.6s var(--ease-out);
+  transform: translateX(130%);
+}
+
+.poster-download-btn:active { transform: translateY(0) scale(1); }
+.poster-download-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+
+/* ── Poster stage ─────────────────────────────────────────── */
+.poster-stage {
+  display: flex;
+  justify-content: center;
+  height: 368px;
+  align-items: flex-start;
+}
+
+.poster-canvas {
+  width:  1080px;
+  height: 1080px;
+  transform: scale(0.3333);
+  transform-origin: top center;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 32px;
+  background: #03030a;
+  isolation: isolate;
+}
+
+/* ── Poster background layers ──────────────────────────────── */
+.poster-bg-layer,
+.poster-glow-layer,
+.poster-grain-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.poster-grain-layer {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  background-size: 300px 300px;
+  z-index: 2;
+  mix-blend-mode: overlay;
+}
+
+/* ── Poster content ─────────────────────────────────────────── */
+.poster-content {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 80px 90px;
+  gap: 0;
+  width: 100%;
+}
+
+.poster-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 40px;
+}
+
+.poster-eyebrow-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.poster-eyebrow-text {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  opacity: 0.72;
+}
+
+.poster-headline {
+  font-family: var(--font-display);
+  font-size: 76px;
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  margin: 0 0 36px;
+  max-width: 880px;
+}
+
+.poster-subtext {
+  font-family: var(--font-body);
+  font-size: 32px;
+  font-weight: 300;
+  line-height: 1.5;
+  margin: 0 0 56px;
+  max-width: 760px;
+  opacity: 0.72;
+}
+
+.poster-divider {
+  width: 80px;
+  height: 2px;
+  margin: 0 auto 56px;
+  border-radius: 2px;
+  background: currentColor;
+  opacity: 0.30;
+}
+
+.poster-cta-btn {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 28px 72px;
+  border-radius: 16px;
+  border: none;
+  cursor: default;
+  margin-bottom: 60px;
+  white-space: nowrap;
+}
+
+.poster-footer-text {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  opacity: 0.30;
+  margin: 0;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   POSTER TEMPLATES
+══════════════════════════════════════════════════════════════ */
+.poster-canvas.startup_neon {
+  background: #03030a;
+  color: #ede8ff;
+  box-shadow: 0 0 0 2px rgba(0, 240, 255, 0.18), 0 0 120px rgba(0, 240, 255, 0.08);
+}
+.poster-canvas.startup_neon .poster-bg-layer {
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 80%, rgba(90, 40, 200, 0.28) 0%, transparent 65%),
+    radial-gradient(ellipse 60% 50% at 80% 20%, rgba(0, 180, 210, 0.18) 0%, transparent 65%),
+    radial-gradient(ellipse 40% 40% at 50% 50%, rgba(155, 109, 255, 0.06) 0%, transparent 70%);
+  z-index: 0;
+}
+.poster-canvas.startup_neon .poster-glow-layer {
+  background: radial-gradient(ellipse 55% 55% at 50% 42%, rgba(0, 240, 255, 0.08) 0%, transparent 70%);
+  z-index: 1;
+}
+.poster-canvas.startup_neon .poster-headline {
+  background: linear-gradient(135deg, #ffffff 30%, #00f0ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 40px rgba(0, 240, 255, 0.35));
+}
+.poster-canvas.startup_neon .poster-eyebrow-text { color: #00f0ff; }
+.poster-canvas.startup_neon .poster-eyebrow-dot  { background: #00f0ff; box-shadow: 0 0 14px #00f0ff; }
+.poster-canvas.startup_neon .poster-divider      { background: linear-gradient(to right, #00f0ff, #9b6dff); opacity: 1; }
+.poster-canvas.startup_neon .poster-cta-btn {
+  background: linear-gradient(135deg, #00f0ff 0%, #9b6dff 100%);
+  color: #03030a;
+  box-shadow: 0 0 60px rgba(0, 240, 255, 0.40), 0 0 30px rgba(155, 109, 255, 0.30);
+}
+
+.poster-canvas.minimal_white {
+  background: #f8f8fb;
+  color: #0f0f1a;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.08);
+}
+.poster-canvas.minimal_white .poster-bg-layer {
+  background:
+    radial-gradient(ellipse 70% 50% at 15% 85%, rgba(155, 109, 255, 0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 85% 15%, rgba(0, 180, 210, 0.05) 0%, transparent 60%);
+  z-index: 0;
+}
+.poster-canvas.minimal_white .poster-glow-layer   { display: none; }
+.poster-canvas.minimal_white .poster-headline     { color: #0f0f1a; -webkit-text-fill-color: #0f0f1a; }
+.poster-canvas.minimal_white .poster-subtext      { color: #3a3a5c; opacity: 0.72; }
+.poster-canvas.minimal_white .poster-eyebrow-text { color: #6b6b8a; }
+.poster-canvas.minimal_white .poster-eyebrow-dot  { background: #9b6dff; box-shadow: none; }
+.poster-canvas.minimal_white .poster-footer-text  { color: #6b6b8a; }
+.poster-canvas.minimal_white .poster-divider      { background: #9b6dff; opacity: 0.4; }
+.poster-canvas.minimal_white .poster-cta-btn      { background: #0f0f1a; color: #f8f8fb; box-shadow: 0 8px 32px rgba(0,0,0,0.18); }
+
+.poster-canvas.gradient_dark {
+  background: linear-gradient(160deg, #050c1f 0%, #0d1b3e 50%, #060d22 100%);
+  color: #e8e0ff;
+  box-shadow: 0 0 0 2px rgba(180, 150, 80, 0.20);
+}
+.poster-canvas.gradient_dark .poster-bg-layer {
+  background:
+    radial-gradient(ellipse 60% 50% at 25% 75%, rgba(30, 60, 140, 0.45) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 40% at 75% 25%, rgba(80, 30, 120, 0.30) 0%, transparent 65%);
+  z-index: 0;
+}
+.poster-canvas.gradient_dark .poster-glow-layer {
+  background: radial-gradient(ellipse 50% 45% at 50% 40%, rgba(180, 150, 80, 0.07) 0%, transparent 70%);
+  z-index: 1;
+}
+.poster-canvas.gradient_dark .poster-headline {
+  background: linear-gradient(135deg, #ffffff 20%, #c8a84b 80%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.poster-canvas.gradient_dark .poster-eyebrow-text { color: #c8a84b; }
+.poster-canvas.gradient_dark .poster-eyebrow-dot  { background: #c8a84b; box-shadow: 0 0 12px rgba(200,168,75,0.6); }
+.poster-canvas.gradient_dark .poster-divider      { background: linear-gradient(to right, #c8a84b, transparent); opacity: 0.7; }
+.poster-canvas.gradient_dark .poster-cta-btn      { background: linear-gradient(135deg, #c8a84b 0%, #f0d060 100%); color: #050c1f; box-shadow: 0 8px 48px rgba(200,168,75,0.35); }
+
+.poster-canvas.bold_impact {
+  background: linear-gradient(135deg, #6b23c8 0%, #e040a0 50%, #ff8c38 100%);
+  color: #ffffff;
+}
+.poster-canvas.bold_impact .poster-bg-layer {
+  background:
+    radial-gradient(ellipse 55% 45% at 20% 80%, rgba(0,0,0,0.22) 0%, transparent 60%),
+    radial-gradient(ellipse 45% 35% at 80% 20%, rgba(255,255,255,0.08) 0%, transparent 60%);
+  z-index: 0;
+}
+.poster-canvas.bold_impact .poster-glow-layer {
+  background: radial-gradient(ellipse 60% 55% at 50% 45%, rgba(255,255,255,0.10) 0%, transparent 65%);
+  z-index: 1;
+}
+.poster-canvas.bold_impact .poster-headline     { color: #fff; -webkit-text-fill-color: #fff; text-shadow: 0 4px 40px rgba(0,0,0,0.25); }
+.poster-canvas.bold_impact .poster-eyebrow-text { color: rgba(255,255,255,0.80); }
+.poster-canvas.bold_impact .poster-eyebrow-dot  { background: #fff; box-shadow: 0 0 12px rgba(255,255,255,0.6); }
+.poster-canvas.bold_impact .poster-divider      { background: rgba(255,255,255,0.40); opacity: 1; }
+.poster-canvas.bold_impact .poster-subtext      { color: rgba(255,255,255,0.82); }
+.poster-canvas.bold_impact .poster-cta-btn      { background: rgba(255,255,255,0.95); color: #6b23c8; box-shadow: 0 8px 40px rgba(0,0,0,0.22); }
+
+.poster-canvas.corporate_clean {
+  background: #ffffff;
+  color: #1a1a2e;
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.06);
+}
+.poster-canvas.corporate_clean .poster-bg-layer {
+  background:
+    linear-gradient(to bottom, rgba(0,80,180,0.04) 0%, transparent 50%),
+    radial-gradient(ellipse 80% 20% at 50% 0%, rgba(0,100,220,0.06) 0%, transparent 60%);
+  z-index: 0;
+}
+.poster-canvas.corporate_clean .poster-glow-layer  { display: none; }
+.poster-canvas.corporate_clean .poster-headline    { color: #0d1b3e; -webkit-text-fill-color: #0d1b3e; }
+.poster-canvas.corporate_clean .poster-subtext     { color: #3a4060; opacity: 0.75; }
+.poster-canvas.corporate_clean .poster-eyebrow-text { color: #0056b3; }
+.poster-canvas.corporate_clean .poster-eyebrow-dot  { background: #0056b3; box-shadow: none; }
+.poster-canvas.corporate_clean .poster-footer-text  { color: #8090a8; }
+.poster-canvas.corporate_clean .poster-divider      { background: #0056b3; opacity: 0.25; }
+.poster-canvas.corporate_clean .poster-cta-btn      { background: #0056b3; color: #ffffff; box-shadow: 0 8px 32px rgba(0,86,179,0.28); }
+
+
+/* ── Poster section responsive ─────────────────────────────── */
+@media (max-width: 768px) {
+  .poster-section { padding-left: 20px; padding-right: 20px; }
+  .poster-controls-grid { grid-template-columns: 1fr; }
+  .poster-controls-footer { flex-direction: column; align-items: stretch; }
+  .poster-preview-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .poster-download-btn { width: 100%; justify-content: center; }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   SOCIAL MEDIA CAMPAIGN GENERATOR — SECTION 04
+   ──────────────────────────────────────────────────────────────
+   Design notes:
+   • .campaign-section mirrors .results-section (max-width 1160px)
+     so the 5-card results grid has the same generous width.
+   • .campaign-controls-panel inside .glass-panel reuses the same
+     panel-header / panel-badge / poster-hint patterns verbatim.
+   • The generate button uses class="generate-btn" — no custom
+     button class needed; all styling is inherited from above.
+   • .campaign-controls-footer mirrors .poster-controls-footer
+     (same flex layout: hint left, button right).
+   • .campaign-results-wrap uses a fade-up CSS transition that
+     is triggered by JS adding .campaign-results-visible.
+══════════════════════════════════════════════════════════════ */
+
+/* ── Section wrapper — wide (matches results-section) ───── */
+.campaign-section {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 0 32px 140px;
+}
+
+/* ── Control panel footer — mirrors poster-controls-footer ── */
+.campaign-controls-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding-top: 32px;
+  border-top: 1px solid var(--glass-border);
+}
+
+/* ── Campaign results wrapper — fade-up reveal ───────────── */
+.campaign-results-wrap {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity   0.6s var(--ease-out),
+    transform 0.6s var(--ease-out);
+}
+
+.campaign-results-wrap.campaign-results-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .campaign-section          { padding-left: 20px; padding-right: 20px; }
+  .campaign-controls-footer  { flex-direction: column; align-items: stretch; }
+  /* generate-btn already gets width:100% from the shared mobile rule above */
+}

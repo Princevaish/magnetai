@@ -1,0 +1,14 @@
+/* ═══════════════════════════════════════════════════════════════
+   MagnetAI — styles/animations.css
+   GSAP reveal initial states.
+   Keyframe definitions (@keyframes) live in base.css alongside
+   the elements that use them — no need to duplicate here.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── GSAP reveal start states ─────────────────────────────── */
+/* Elements start hidden/offset; animations/gsap.js tweens them in */
+.reveal-block,
+.reveal-field {
+  opacity: 0;
+  transform: translateY(28px);
+}

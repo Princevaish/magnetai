@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MagnetAI — Generative Marketing Intelligence</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;1,300&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+
+  <!-- GSAP + ScrollTrigger (must load before animations/gsap.js) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+  <!-- Spline 3D viewer web component -->
+  <script type="module" src="https://unpkg.com/@splinetool/viewer@1.12.68/build/spline-viewer.js"></script>
+
+  <!-- ✦ Clerk browser SDK
+       NOTE: Do NOT add "async" or "defer" here.
+       Clerk must be available synchronously when app.js runs. -->
+  <script
+    src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
+    data-clerk-publishable-key="pk_test_cm9idXN0LWZvd2wtNjUuY2xlcmsuYWNjb3VudHMuZGV2JA"
+    crossorigin="anonymous"
+  ></script>
+
+  <!-- html2canvas — poster PNG download -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <!-- ── Styles ─────────────────────────────────────────── -->
+  <link rel="stylesheet" href="styles/base.css" />
+  <link rel="stylesheet" href="styles/components.css" />
+  <link rel="stylesheet" href="styles/animations.css" />
+  <link rel="stylesheet" href="styles/landing_page.css" />
+</head>
+<body>
+
+  <!-- ─── Ambient canvas particles ───────────────────────── -->
+  <canvas id="bg-canvas"></canvas>
+  <div class="noise-overlay"></div>
+  <div class="grid-overlay"></div>
+
+  <!-- ─── Custom cursor glow ─────────────────────────────── -->
+  <div class="cursor-glow" id="cursor-glow" aria-hidden="true"></div>
+
+  <!-- ════════════════════════════════════════════════════════
+       CLERK LOADING SCREEN
+  ════════════════════════════════════════════════════════ -->
+  <div id="clerk-loading" class="clerk-loading" aria-live="polite" aria-label="Checking authentication">
+    <div class="clerk-loading-inner">
+      <span class="clerk-loading-icon">⬡</span>
+      <p class="clerk-loading-text">Checking authentication...</p>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════
+       AUTH CONTAINER
+  ════════════════════════════════════════════════════════ -->
+  <div id="auth-container" class="auth-container hidden" aria-label="Sign in to MagnetAI">
+
+    <div class="auth-spline-bg" aria-hidden="true" id="auth-spline-bg">
+      <spline-viewer
+        url="https://prod.spline.design/rpsxojYmX78Cr4YS/scene.splinecode"
+        loading-anim-type="none"
+      ></spline-viewer>
+      <div class="spline-watermark-cover" id="spline-watermark-cover" aria-hidden="true"></div>
+    </div>
+
+    <div class="auth-inner">
+      <div class="auth-brand">
+        <span class="auth-brand-icon">⬡</span>
+        <span class="auth-brand-name">MagnetAI</span>
+      </div>
+      <p class="auth-tagline">Generative Marketing Intelligence</p>
+      <div id="clerk-sign-in"></div>
+    </div>
+
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════
+       APP CONTAINER
+  ════════════════════════════════════════════════════════ -->
+  <div id="app-container" class="hidden" style="display:none">
+
+  <!-- ════════════════════════════════════════════════════════
+       NAVBAR
+  ════════════════════════════════════════════════════════ -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-logo">
+      <span class="logo-icon">⬡</span>
+      <span class="logo-text">MagnetAI</span>
+    </div>
+
+    <div class="nav-links">
+      <a href="#input-section" class="nav-link">Build</a>
+      <a href="#results-section" class="nav-link">Results</a>
+    </div>
+
+    <div class="nav-right">
+      <div class="nav-status">
+        <span class="status-dot"></span>
+        <span class="status-text">AI Engine Online</span>
+      </div>
+      <div class="nav-version">v2.5.0</div>
+      <div id="clerk-user-btn" class="clerk-user-btn" aria-label="Account menu"></div>
+    </div>
+  </nav>
+
+  <!-- ════════════════════════════════════════════════════════
+       HERO
+  ════════════════════════════════════════════════════════ -->
+  <section class="hero" id="hero">
+
+    <div class="spline-wrap">
+      <spline-viewer
+        url="https://prod.spline.design/Ttr4Q5NFxOuajUAF/scene.splinecode"
+        loading-anim-type="none"
+      ></spline-viewer>
+      <div class="spline-watermark-cover" id="spline-watermark-cover" aria-hidden="true"></div>
+    </div>
+
+    <div class="hero-content">
+
+      <div class="hero-eyebrow" id="hero-eyebrow">
+        <span class="eyebrow-pill">
+          <span class="eyebrow-dot"></span>
+          Generative Marketing Intelligence
+        </span>
+      </div>
+
+      <h1 class="hero-title" id="hero-title" aria-label="Attract. Convert. Dominate.">
+        <span class="hero-line title-line line-1 attract"  data-line="Attract."></span>
+        <span class="hero-line title-line line-2 convert"  data-line="Convert."></span>
+        <span class="hero-line title-line line-3 dominate" data-line="Dominate."></span>
+      </h1>
+
+      <p class="hero-sub" id="hero-sub">
+        MagnetAI synthesizes high-converting lead magnets from your business DNA —
+        headlines, CTAs, email sequences, and content strategy. Instantly.
+      </p>
+
+      <div class="hero-metrics" id="hero-metrics">
+        <div class="metric">
+          <span class="metric-val" id="counter-magnets"  data-target="12" data-suffix="k+">0k+</span>
+          <span class="metric-label">Magnets Generated</span>
+        </div>
+        <div class="metric-divider"></div>
+        <div class="metric">
+          <span class="metric-val" id="counter-conversion" data-target="94" data-suffix="%">0%</span>
+          <span class="metric-label">Conversion Uplift</span>
+        </div>
+        <div class="metric-divider"></div>
+        <div class="metric">
+          <span class="metric-val" id="counter-speed" data-target="8" data-prefix="&lt; " data-suffix="s">0s</span>
+          <span class="metric-label">Generation Time</span>
+        </div>
+      </div>
+
+      <div class="hero-scroll-hint" id="hero-scroll-hint">
+        <span>Configure your magnet</span>
+        <div class="scroll-arrow">↓</div>
+      </div>
+
+    </div><!-- /hero-content -->
+  </section>
+
+  <!-- ════════════════════════════════════════════════════════
+       01 — INPUT PANEL
+  ════════════════════════════════════════════════════════ -->
+  <section class="input-section" id="input-section">
+
+    <div class="section-label reveal-block">
+      <span class="label-num">01</span>
+      <span class="label-text">BUSINESS PROFILE</span>
+    </div>
+
+    <div class="glass-panel reveal-block" id="input-panel">
+
+      <div class="panel-header">
+        <div class="panel-title-group">
+          <h2 class="panel-title">Configure Your Magnet</h2>
+          <p class="panel-subtitle">Provide your business context — the AI does the rest.</p>
+        </div>
+        <div class="panel-badge">LLaMA3-70B</div>
+      </div>
+
+      <div class="form-grid">
+
+        <div class="field-group full-width reveal-field">
+          <label class="field-label" for="business">
+            <span class="label-icon">◈</span> Business Name / Description
+          </label>
+          <input type="text" id="business" class="field-input"
+            placeholder="e.g. Online fitness coaching for busy professionals"
+            autocomplete="off" />
+        </div>
+
+        <div class="field-group reveal-field">
+          <label class="field-label" for="industry">
+            <span class="label-icon">◈</span> Industry
+          </label>
+          <input type="text" id="industry" class="field-input"
+            placeholder="e.g. Health &amp; Wellness" autocomplete="off" />
+        </div>
+
+        <div class="field-group reveal-field">
+          <label class="field-label" for="audience">
+            <span class="label-icon">◈</span> Target Audience
+          </label>
+          <input type="text" id="audience" class="field-input"
+            placeholder="e.g. Professionals aged 25–45" autocomplete="off" />
+        </div>
+
+        <div class="field-group reveal-field">
+          <label class="field-label" for="goal">
+            <span class="label-icon">◈</span> Marketing Goal
+          </label>
+          <input type="text" id="goal" class="field-input"
+            placeholder="e.g. Collect email leads" autocomplete="off" />
+        </div>
+
+        <div class="field-group reveal-field">
+          <label class="field-label" for="tone">
+            <span class="label-icon">◈</span> Tone
+          </label>
+          <div class="custom-select-wrapper">
+            <select id="tone" class="field-input field-select">
+              <option value="">Select a tone...</option>
+              <option value="Professional & authoritative">Professional &amp; Authoritative</option>
+              <option value="Motivational and energetic">Motivational &amp; Energetic</option>
+              <option value="Friendly and conversational">Friendly &amp; Conversational</option>
+              <option value="Urgent and persuasive">Urgent &amp; Persuasive</option>
+              <option value="Luxury and exclusive">Luxury &amp; Exclusive</option>
+              <option value="Educational and informative">Educational &amp; Informative</option>
+              <option value="Bold and disruptive">Bold &amp; Disruptive</option>
+            </select>
+            <span class="select-arrow" aria-hidden="true">⌄</span>
+          </div>
+        </div>
+
+      </div><!-- /form-grid -->
+
+      <div class="form-footer reveal-field">
+        <div class="token-counter">
+          <span class="token-icon">◉</span>
+          <span class="token-text">AI tokens available: <strong>∞</strong></span>
+        </div>
+        <button class="generate-btn" id="generate-btn" type="button">
+          <span class="btn-glow"    aria-hidden="true"></span>
+          <span class="btn-shimmer" aria-hidden="true"></span>
+          <span class="btn-content">
+            <span class="btn-icon">✦</span>
+            <span class="btn-label">Generate Lead Magnet</span>
+          </span>
+        </button>
+      </div>
+
+    </div><!-- /glass-panel -->
+  </section>
+
+  <!-- ════════════════════════════════════════════════════════
+       LOADER
+  ════════════════════════════════════════════════════════ -->
+  <section class="loader-section hidden" id="loader-section" aria-live="polite">
+    <div class="loader-wrap">
+      <div class="loader-orb">
+        <div class="orb-ring ring-1"></div>
+        <div class="orb-ring ring-2"></div>
+        <div class="orb-ring ring-3"></div>
+        <div class="orb-core">⬡</div>
+      </div>
+      <div class="loader-text-wrap">
+        <p class="loader-headline">AI is crafting your lead magnet</p>
+        <p class="loader-sub" id="loader-sub">Analyzing business context...</p>
+      </div>
+      <div class="loader-steps">
+        <div class="step active" id="step-1"><div class="step-dot"></div><span>Parsing business profile</span></div>
+        <div class="step"        id="step-2"><div class="step-dot"></div><span>Generating magnet strategy</span></div>
+        <div class="step"        id="step-3"><div class="step-dot"></div><span>Crafting conversion copy</span></div>
+        <div class="step"        id="step-4"><div class="step-dot"></div><span>Finalizing output</span></div>
+      </div>
+      <div class="ai-thinking-banner" id="ai-thinking" aria-live="polite">
+        <span class="ai-thinking-dot"></span>
+        <span class="ai-thinking-text" id="ai-thinking-text">Analyzing your audience...</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════════
+       02 — RESULTS
+  ════════════════════════════════════════════════════════ -->
+  <section class="results-section hidden" id="results-section">
+    <div class="section-label">
+      <span class="label-num">02</span>
+      <span class="label-text">GENERATED OUTPUT</span>
+    </div>
+    <div class="results-header">
+      <h2 class="results-title">Your Lead Magnet Package</h2>
+      <button class="regenerate-btn" id="regenerate-btn" type="button">
+        <span aria-hidden="true">↺</span> Regenerate
+      </button>
+    </div>
+    <div class="results-grid" id="results-grid"></div>
+
+    <div class="export-wrap" id="export-wrap">
+      <button class="export-btn" id="export-btn" type="button">
+        <span class="btn-glow"    aria-hidden="true"></span>
+        <span class="btn-shimmer" aria-hidden="true"></span>
+        <span class="btn-content">
+          <span class="btn-icon">↓</span>
+          <span class="btn-label">Export Lead Magnet</span>
+        </span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════════
+       03 — POSTER GENERATOR
+  ════════════════════════════════════════════════════════ -->
+  <section class="poster-section hidden" id="poster-section">
+
+    <div class="section-label">
+      <span class="label-num">03</span>
+      <span class="label-text">AI POSTER GENERATOR</span>
+    </div>
+
+    <div class="glass-panel poster-controls-panel" id="poster-controls">
+      <div class="panel-header">
+        <div class="panel-title-group">
+          <h2 class="panel-title">Generate Visual Poster</h2>
+          <p class="panel-subtitle">Convert your lead magnet into a download-ready marketing poster.</p>
+        </div>
+        <div class="panel-badge">1080 × 1080</div>
+      </div>
+
+      <div class="poster-controls-grid">
+        <div class="field-group">
+          <label class="field-label" for="poster-template">
+            <span class="label-icon">◈</span> Visual Template
+          </label>
+          <div class="custom-select-wrapper">
+            <select id="poster-template" class="field-input field-select">
+              <option value="startup_neon">Startup Neon — Dark + Cyan Glow</option>
+              <option value="minimal_white">Minimal White — Clean Light</option>
+              <option value="gradient_dark">Gradient Dark — Deep Blue</option>
+              <option value="bold_impact">Bold Impact — Vibrant Gradient</option>
+              <option value="corporate_clean">Corporate Clean — White Professional</option>
+            </select>
+            <span class="select-arrow" aria-hidden="true">⌄</span>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="poster-size">
+            <span class="label-icon">◈</span> Poster Size
+          </label>
+          <div class="custom-select-wrapper">
+            <select id="poster-size" class="field-input field-select">
+              <option value="1080x1080">1080 × 1080 — Square (Instagram)</option>
+              <option value="1080x1920">1080 × 1920 — Story / Reel</option>
+              <option value="1200x628">1200 × 628 — LinkedIn / OG</option>
+            </select>
+            <span class="select-arrow" aria-hidden="true">⌄</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="poster-controls-footer">
+        <p class="poster-hint">
+          <span class="token-icon">◉</span>
+          Headline and CTA may be AI-optimised for poster format
+        </p>
+        <button class="generate-btn" id="generate-poster-btn" type="button">
+          <span class="btn-glow"    aria-hidden="true"></span>
+          <span class="btn-shimmer" aria-hidden="true"></span>
+          <span class="btn-content">
+            <span class="btn-icon">✦</span>
+            <span class="btn-label">Generate Poster</span>
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <div class="poster-preview-wrap hidden" id="poster-preview-wrap">
+      <div class="poster-preview-header">
+        <p class="poster-preview-label">
+          <span class="eyebrow-dot"></span> Preview — scale 1:3
+        </p>
+        <button class="poster-download-btn" id="poster-download-btn" type="button">
+          <span class="btn-glow"    aria-hidden="true"></span>
+          <span class="btn-shimmer" aria-hidden="true"></span>
+          <span class="btn-content">
+            <span class="btn-icon">↓</span>
+            <span class="btn-label">Download PNG</span>
+          </span>
+        </button>
+      </div>
+
+      <div class="poster-stage">
+        <div class="poster-canvas" id="poster-canvas">
+          <div class="poster-bg-layer"    aria-hidden="true"></div>
+          <div class="poster-glow-layer"  aria-hidden="true"></div>
+          <div class="poster-grain-layer" aria-hidden="true"></div>
+          <div class="poster-content">
+            <div class="poster-eyebrow">
+              <span class="poster-eyebrow-dot"></span>
+              <span class="poster-eyebrow-text">MagnetAI</span>
+            </div>
+            <h2 class="poster-headline" id="poster-headline">Your Headline</h2>
+            <p class="poster-subtext"   id="poster-subtext">Your subtext will appear here</p>
+            <div class="poster-divider" aria-hidden="true"></div>
+            <button class="poster-cta-btn" id="poster-cta">Download Now</button>
+            <p class="poster-footer-text">magnetai.app</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ════════════════════════════════════════════════════════
+       04 — SOCIAL MEDIA CAMPAIGN GENERATOR
+  ════════════════════════════════════════════════════════ -->
+  <section class="campaign-section hidden" id="campaign-section">
+
+    <div class="section-label">
+      <span class="label-num">04</span>
+      <span class="label-text">SOCIAL MEDIA CAMPAIGN</span>
+    </div>
+
+    <div class="glass-panel campaign-controls-panel" id="campaign-controls">
+      <div class="panel-header">
+        <div class="panel-title-group">
+          <h2 class="panel-title">Generate Social Media Campaign</h2>
+          <p class="panel-subtitle">
+            Turn your lead magnet into a full multi-platform campaign —
+            LinkedIn, Twitter&nbsp;/ X, Instagram, Email and CTAs.
+          </p>
+        </div>
+        <div class="panel-badge">LLaMA3-70B</div>
+      </div>
+
+      <div class="campaign-controls-footer">
+        <p class="poster-hint">
+          <span class="token-icon">◉</span>
+          Uses your lead magnet headline, description, audience &amp; tone
+        </p>
+        <button class="generate-btn" id="generate-campaign-btn" type="button">
+          <span class="btn-glow"    aria-hidden="true"></span>
+          <span class="btn-shimmer" aria-hidden="true"></span>
+          <span class="btn-content">
+            <span class="btn-icon">✦</span>
+            <span class="btn-label">Generate Campaign</span>
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <div class="campaign-results-wrap hidden" id="campaign-results-wrap">
+      <div class="results-header" style="margin-top:48px;">
+        <h2 class="results-title">Your Campaign Package</h2>
+      </div>
+      <div class="results-grid" id="campaign-results-grid"></div>
+    </div>
+
+  </section>
+
+  <!-- ════════════════════════════════════════════════════════
+       05 — AI LANDING PAGE GENERATOR
+       Hidden on load. Revealed after lead magnet is generated.
+  ════════════════════════════════════════════════════════ -->
+  <section class="landing-page-section hidden" id="landing-page-section">
+
+    <div class="section-label">
+      <span class="label-num">05</span>
+      <span class="label-text">AI LANDING PAGE GENERATOR</span>
+    </div>
+
+    <!-- ── Controls panel ─────────────────────────────────── -->
+    <div class="glass-panel lp-controls-panel" id="lp-controls">
+
+      <div class="panel-header">
+        <div class="panel-title-group">
+          <h2 class="panel-title">Generate Landing Page</h2>
+          <p class="panel-subtitle">
+            Turn your lead magnet into a full conversion landing page —
+            hero, benefits, testimonials, FAQ — ready to download as HTML.
+          </p>
+        </div>
+        <div class="panel-badge">LLaMA3-70B</div>
+      </div>
+
+      <!-- Theme selector -->
+      <div class="poster-controls-grid" style="margin-bottom:0;">
+        <div class="field-group">
+          <label class="field-label" for="lp-theme">
+            <span class="label-icon">◈</span> Visual Theme
+          </label>
+          <div class="custom-select-wrapper">
+            <select id="lp-theme" class="field-input field-select">
+              <option value="startup_neon">Startup Neon — Dark + Cyan Glow</option>
+              <option value="minimal_white">Minimal White — Clean Light</option>
+              <option value="corporate_clean">Corporate Clean — White Professional</option>
+              <option value="gradient_dark">Gradient Dark — Deep Blue</option>
+              <option value="bold_startup">Bold Startup — Vibrant Gradient</option>
+            </select>
+            <span class="select-arrow" aria-hidden="true">⌄</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="lp-controls-footer">
+        <p class="poster-hint">
+          <span class="token-icon">◉</span>
+          Uses your lead magnet headline, description, audience &amp; tone
+        </p>
+        <button class="generate-btn" id="generate-lp-btn" type="button">
+          <span class="btn-glow"    aria-hidden="true"></span>
+          <span class="btn-shimmer" aria-hidden="true"></span>
+          <span class="btn-content">
+            <span class="btn-icon">✦</span>
+            <span class="btn-label">Generate Landing Page</span>
+          </span>
+        </button>
+      </div>
+
+    </div><!-- /glass-panel -->
+
+    <!-- ── Preview ─────────────────────────────────────────── -->
+    <div class="lp-preview-wrap hidden" id="lp-preview-wrap">
+
+      <div class="lp-preview-header">
+        <p class="lp-preview-label">
+          <span class="eyebrow-dot"></span> Preview
+        </p>
+        <button class="poster-download-btn" id="lp-download-btn" type="button">
+          <span class="btn-glow"    aria-hidden="true"></span>
+          <span class="btn-shimmer" aria-hidden="true"></span>
+          <span class="btn-content">
+            <span class="btn-icon">↓</span>
+            <span class="btn-label">Download HTML</span>
+          </span>
+        </button>
+      </div>
+
+      <div class="lp-preview-card">
+
+        <!-- Hero -->
+        <div class="lp-hero">
+          <h2 class="lp-hero-title"    id="lp-hero-title">Your Hero Title</h2>
+          <p class="lp-hero-subtitle"  id="lp-hero-subtitle">Hero subtitle will appear here.</p>
+          <span class="lp-cta-btn-preview" id="lp-cta-text">Get Started</span>
+        </div>
+
+        <!-- Content grid: benefits + testimonials -->
+        <div class="lp-content-grid">
+
+          <div>
+            <p class="lp-section-title">Why It Works</p>
+            <ul class="lp-benefits-list" id="lp-benefits-list">
+              <!-- Injected by landing_page_generator.js -->
+            </ul>
+          </div>
+
+          <div>
+            <p class="lp-section-title">What People Say</p>
+            <ul class="lp-testimonials-list" id="lp-testimonials-list">
+              <!-- Injected by landing_page_generator.js -->
+            </ul>
+          </div>
+
+          <!-- FAQ — full width -->
+          <div class="lp-faq-wrap">
+            <p class="lp-section-title">Frequently Asked Questions</p>
+            <div class="lp-faq-list" id="lp-faq-list">
+              <!-- Injected by landing_page_generator.js -->
+            </div>
+          </div>
+
+        </div><!-- /lp-content-grid -->
+
+        <p class="lp-footer-preview" id="lp-footer-text">Footer tagline</p>
+
+      </div><!-- /lp-preview-card -->
+
+    </div><!-- /lp-preview-wrap -->
+
+  </section><!-- /landing-page-section -->
+
+  <!-- ════════════════════════════════════════════════════════
+       FOOTER
+  ════════════════════════════════════════════════════════ -->
+  <footer class="footer">
+    <div class="footer-logo">
+      <span class="logo-icon">⬡</span> MagnetAI
+    </div>
+    <p class="footer-copy">Powered by LLaMA3 · Built with Groq · © 2025 MagnetAI</p>
+  </footer>
+
+  <!-- Toast notification -->
+  <div class="toast" id="toast" role="status">
+    <span class="toast-icon" aria-hidden="true">✓</span>
+    <span class="toast-msg" id="toast-msg">Copied to clipboard</span>
+  </div>
+
+  </div><!-- /#app-container -->
+
+  <!-- ═══════════════════════════════════════════════════════════
+       SCRIPT LOAD ORDER
+       1. config.js   — constants (ENDPOINTS)
+       2. state.js    — global state object
+       3. api.js      — fetch helpers (needs ENDPOINTS)
+       4. ui/toast.js — showToast() (needed by everyone)
+       5. ui/loader.js — showLoader() etc.
+       6. ui/cards.js  — buildCard(), escapeHtml(), handleCopy()
+       7. features/*   — feature modules (need all of the above)
+       8. app.js       — auth + canvas (bootstraps Clerk)
+       9. animations/gsap.js — GSAP animations (last, after all DOM ready)
+  ═══════════════════════════════════════════════════════════ -->
+  <script src="js/config.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/api.js"></script>
+
+  <script src="js/ui/toast.js"></script>
+  <script src="js/ui/loader.js"></script>
+  <script src="js/ui/cards.js"></script>
+
+  <script src="js/features/lead_magnet.js"></script>
+  <script src="js/features/poster_generator.js"></script>
+  <script src="js/features/campaign_generator.js"></script>
+  <script src="js/features/landing_page_generator.js"></script>
+
+  <script src="js/app.js"></script>
+  <script src="animations/gsap.js"></script>
+</body>
+</html>
