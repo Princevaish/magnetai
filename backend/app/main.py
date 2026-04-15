@@ -10,7 +10,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Tighten this in production to your Vercel domain
+    allow_origins=["*", "https://magnetai.onrender.com"],  # Tighten this in production to your Vercel domain
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
