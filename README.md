@@ -383,6 +383,3 @@ If you found this project useful:
 🚀 Share it with others
 
 Built with AI, FastAPI & LLaMA 3.3
-                    ┌─────────────────────────────────┐
-                    │ Generated Marketing Assets      │
-                    └─────────────────────────────────┘
