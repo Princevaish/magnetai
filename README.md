@@ -382,7 +382,7 @@ If you found this project useful:
 🍴 Fork the project
 🚀 Share it with others
 
-Built with ❤️ using AI, FastAPI & LLaMA 3.3
+Built with AI, FastAPI & LLaMA 3.3
                     ┌─────────────────────────────────┐
                     │ Generated Marketing Assets      │
                     └─────────────────────────────────┘
